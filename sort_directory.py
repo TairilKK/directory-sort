@@ -30,12 +30,21 @@ def move_file(file, in_dir, out_dir, max_byte_size):
     
     while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
         pass 
-
-    _, file_ext = os.path.splitext(file)
+    
+    
+    file_name, file_ext = os.path.splitext(file)
     file_ext = file_ext.replace('.', '')
     if not os.path.exists(f'{OUT_DIRECTORY}/{file_ext}'):
         os.mkdir(f'{out_dir}/{file_ext}')
-    os.replace(f'{in_dir}/{file}', f'{out_dir}/{file_ext}/{file}')
+    
+    # files with same name
+    count = 0
+    new_file = file
+    while os.path.exists(f'{out_dir}/{file_ext}/{new_file}'):
+        new_file = f'{file_name}_{count:03}.{file_ext}'
+        count+=1
+
+    os.replace(f'{in_dir}/{file}', f'{out_dir}/{file_ext}/{new_file}')
 
 def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     threads = []
@@ -45,13 +54,10 @@ def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
         
         if not os.path.isdir(f'{INP_DIRECTORY}/{file}'):  
             threads.append(threading.Thread(target=move_file, args=(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE))) 
-            # move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
 
     for thread in threads:
         thread.start()  
 
-    for thread in threads:
-        thread.join() 
 
 import time
 from watchdog.observers import Observer
@@ -70,12 +76,11 @@ class MyHandler(FileSystemEventHandler):
             file = os.path.basename(event.src_path)
             thread = threading.Thread(target=move_file, args=(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE))
             thread.start()
-            # move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
 
 def monitor_directory(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     event_handler = MyHandler(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE)
     observer = Observer()
-    observer.schedule(event_handler, INP_DIRECTORY, recursive=False)  # recursive=False oznacza, że nie monitorujemy podkatalogów
+    observer.schedule(event_handler, INP_DIRECTORY, recursive=False)
     observer.start()
 
     try:
