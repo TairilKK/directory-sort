@@ -1,7 +1,14 @@
+import pystray
+from PIL import Image
+import threading
+import time
 import os
 import json
 import sys
 import threading
+import time
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 def configuration_check(config_path):
     try:
@@ -60,9 +67,7 @@ def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     for thread in threads:
         thread.start()  
 
-import time
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+
 
 class MyHandler(FileSystemEventHandler):
     def __init__(self, INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
@@ -96,8 +101,29 @@ def wait_for_download_completion(file_path, wait_time=0.05):
     time.sleep(wait_time)
     return initial_size == os.path.getsize(file_path)
 
-if __name__ == '__main__':
+def background_task():
     CONFIG_PATH = './config.json'
     INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE = configuration_check('./config.json')
     first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE)
     monitor_directory(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE)
+
+
+def on_exit(icon, item):
+    icon.stop()
+
+def create_system_tray_icon():
+    image = Image.open("icon.png")
+    
+    menu = pystray.Menu(
+        pystray.MenuItem("Zamknij", on_exit)
+    )
+    
+    icon = pystray.Icon("Download sort", image, "Moja Aplikacja", menu)
+    
+    icon.run()
+
+if __name__ == "__main__":
+    background_thread = threading.Thread(target=background_task)
+    background_thread.daemon = True
+    background_thread.start()
+    create_system_tray_icon()
