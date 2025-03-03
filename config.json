@@ -1,8 +1,8 @@
 {
-    "INP_DIRECTORY": "./test_dir", 
-    "OUT_DIRECTORY": "./test_out", 
+    "INP_DIRECTORY": "C:/Users/jdobr/Downloads", 
+    "OUT_DIRECTORY": "C:/Users/jdobr/Downloads", 
     "IGNORE_FILES": [
         ".gitignore"
     ], 
-    "MAX_FILE_SIZE": 524288
+    "MAX_FILE_SIZE": 1024000000
 }

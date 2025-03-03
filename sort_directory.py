@@ -35,7 +35,10 @@ def move_file(file, in_dir, out_dir, max_byte_size):
     file_name, file_ext = os.path.splitext(file)
     file_ext = file_ext.replace('.', '')
     if not os.path.exists(f'{OUT_DIRECTORY}/{file_ext}'):
-        os.mkdir(f'{out_dir}/{file_ext}')
+        try:
+            os.mkdir(f'{out_dir}/{file_ext}')
+        except:
+            pass
     
     # files with same name
     count = 0
@@ -57,7 +60,6 @@ def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
 
     for thread in threads:
         thread.start()  
-
 
 import time
 from watchdog.observers import Observer
