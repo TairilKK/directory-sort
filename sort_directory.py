@@ -1,6 +1,8 @@
 import os
 import json
 import sys
+import threading
+
 def configuration_check(config_path):
     try:
         with open(config_path, 'r') as json_file:
@@ -25,6 +27,9 @@ def configuration_check(config_path):
 def move_file(file, in_dir, out_dir, max_byte_size):
     if os.path.getsize(f'{in_dir}/{file}') > max_byte_size:
         return
+    
+    while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
+        pass 
 
     _, file_ext = os.path.splitext(file)
     file_ext = file_ext.replace('.', '')
@@ -33,15 +38,20 @@ def move_file(file, in_dir, out_dir, max_byte_size):
     os.replace(f'{in_dir}/{file}', f'{out_dir}/{file_ext}/{file}')
 
 def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
+    threads = []
     for file in os.listdir(INP_DIRECTORY):
         if file in IGNORE:
             continue
         
-        if not os.path.isdir(f'{INP_DIRECTORY}/{file}'):   
-            while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
-                pass  
-            move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
-           
+        if not os.path.isdir(f'{INP_DIRECTORY}/{file}'):  
+            threads.append(threading.Thread(target=move_file, args=(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE))) 
+            # move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
+
+    for thread in threads:
+        thread.start()  
+
+    for thread in threads:
+        thread.join() 
 
 import time
 from watchdog.observers import Observer
@@ -58,9 +68,9 @@ class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:  
             file = os.path.basename(event.src_path)
-            while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
-                pass  
-            move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
+            thread = threading.Thread(target=move_file, args=(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE))
+            thread.start()
+            # move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
 
 def monitor_directory(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     event_handler = MyHandler(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE)
