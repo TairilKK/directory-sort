@@ -1,0 +1,9 @@
+ext/
+.ext/
+pdf/
+docs/
+log/
+
+*.pdf
+*.docs
+*.log

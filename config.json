@@ -1,0 +1,8 @@
+{
+    "INP_DIRECTORY": "./test_dir", 
+    "OUT_DIRECTORY": "./test_out", 
+    "IGNORE_FILES": [
+        ".gitignore"
+    ], 
+    "MAX_FILE_SIZE": 524288
+}
