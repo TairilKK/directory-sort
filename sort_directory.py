@@ -1,18 +1,18 @@
 import os
 import json
-
+import sys
 def configuration_check(config_path):
     try:
         with open(config_path, 'r') as json_file:
             config = json.loads(json_file.read())
     except:
         print('Missing "config.json" file.')
-        exit(-1)
+        sys.exit(-1)
 
     if not os.path.exists(config['INP_DIRECTORY']):
         inp_dir = config['INP_DIRECTORY']
         print(f'{inp_dir}.')
-        exit(-2)
+        sys.exit(-2)
 
     if not os.path.exists(config['OUT_DIRECTORY']):
         config['OUT_DIRECTORY'] = config['INP_DIRECTORY']
@@ -36,8 +36,10 @@ def first_run(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     for file in os.listdir(INP_DIRECTORY):
         if file in IGNORE:
             continue
-
-        if not os.path.isdir(f'{INP_DIRECTORY}/{file}'):       
+        
+        if not os.path.isdir(f'{INP_DIRECTORY}/{file}'):   
+            while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
+                pass  
             move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
            
 
@@ -56,10 +58,9 @@ class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
         if not event.is_directory:  
             file = os.path.basename(event.src_path)
+            while not wait_for_download_completion(f'{INP_DIRECTORY}/{file}'):
+                pass  
             move_file(file, INP_DIRECTORY, OUT_DIRECTORY, MAX_FILE_SIZE)
-
-
-
 
 def monitor_directory(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     event_handler = MyHandler(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE)
@@ -73,6 +74,11 @@ def monitor_directory(INP_DIRECTORY, OUT_DIRECTORY, IGNORE, MAX_FILE_SIZE):
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+def wait_for_download_completion(file_path, wait_time=5):
+    initial_size = os.path.getsize(file_path)
+    time.sleep(wait_time)
+    return initial_size == os.path.getsize(file_path)
 
 if __name__ == '__main__':
     CONFIG_PATH = './config.json'
